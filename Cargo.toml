@@ -1,0 +1,14 @@
+[package]
+name = "collagen"
+version = "0.1.0"
+authors = ["Christian Rades <christian.rades@googlemail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[profile.release]
+debug = 1
+
+[dependencies]
+image = "0.23.14"
+# dhat = "0.2.2"
