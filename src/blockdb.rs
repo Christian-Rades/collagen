@@ -155,7 +155,7 @@ where
 
         let best = Self::pick_closer_node(&pos, best, node);
 
-        // If best distance intersects the boundary search then the other branch
+        // If best distance intersects the boundary then search the other branch
         let best = if Self::get_dist(node.dim, &node.key, &pos) < best.squared_dist(&pos) {
             let best2 = if !is_less {
                 node.left

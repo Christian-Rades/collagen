@@ -1,36 +1,70 @@
 use image::GenericImageView;
 mod blockdb;
 use blockdb::BlockDb;
+use std::fs::{self, DirEntry};
+use indicatif::{ProgressBar};
+use std::convert::TryInto;
+use rayon::prelude::*;
+use argh::FromArgs;
 
+#[derive(FromArgs)]
+/// Builds a collage with images from "./input/*"
+struct Args {
+    #[argh(positional)]
+    target: String,
+
+    /// size of collage snippets
+    #[argh(option, default = "32")]
+    size: u32,
+}
 
 fn main() {
-    let img = image::open("./markus-spiske-o8IfF0RUTTs-unsplash.jpg")
-        .unwrap()
-        .into_rgb8();
-    let (width, height) = img.dimensions();
+    let args: Args = argh::from_env();
+    let size = args.size;
+    let bar = ProgressBar::new(21);
+    let imgs: Vec<image::RgbImage> = fs::read_dir("input").unwrap().filter_map(|p| {
+        let i = image::open(&p.unwrap().path()).map(|i| i.into_rgb8()).ok();
+        bar.inc(1);
+        i
+    }).collect();
+    bar.finish_and_clear();
+    let sub_imgs = imgs.iter().flat_map(
+        |img| {
+            let (width, height) = img.dimensions();
+            let mut imgs = Vec::new();
+            for x in (0..width - size).step_by(size.try_into().unwrap()) {
+                for y in (0..height - size).step_by(size.try_into().unwrap()) {
+                    imgs.push(img.view(x, y, size, size));
+                }
+            }
+            return imgs;
+        }).collect();
 
-    let mut sub_imgs = Vec::new();
 
-    for x in (0..width - 32).step_by(32) {
-        for y in (0..height - 32).step_by(32) {
-            sub_imgs.push(img.view(x, y, 32, 32))
-        }
-    }
 
     let bldb = BlockDb::new(sub_imgs, |img| avg_color(img).into());
 
-    let img2 = image::open("./alex-motoc-ruzQQ5M1Ow0-unsplash.jpg")
+    let img2 = image::open(args.target.clone())
         .unwrap()
         .into_rgb8();
     let (width, height) = img2.dimensions();
     let mut out_img: image::RgbImage = image::ImageBuffer::new(width, height);
 
-    for x in (0..width - 32).step_by(32) {
-        for y in (0..height - 32).step_by(32) {
-            let avg = avg_color(&img2.view(x, y, 32, 32));
-            let new_block = bldb.find_closest_pos(avg.into()).unwrap();
-            image::imageops::replace(&mut out_img, new_block, x, y);
-        }
+    let coords: Vec<(u32, u32)> = (0..width - size).step_by(size.try_into().unwrap()).flat_map( |x| {
+        (0..height - size).step_by(size.try_into().unwrap()).map(move |y| (x,y))
+    }).collect();
+
+    let bar = ProgressBar::new(coords.len().try_into().unwrap());
+
+    let replacements: Vec<(u32, u32, &image::SubImage<&image::RgbImage>)> = coords.into_par_iter().map(|(x,y)| {
+        let avg = avg_color(&img2.view(x, y, size, size));
+        let new_block = bldb.find_closest_pos(avg.into()).unwrap();
+        bar.inc(1);
+        (x,y, new_block)
+    }).collect();
+    bar.finish_and_clear();
+    for (x,y, blk) in replacements {
+        image::imageops::replace(&mut out_img, blk, x, y);
     }
 
     out_img.save("out.png").unwrap();
