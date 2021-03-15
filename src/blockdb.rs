@@ -43,14 +43,12 @@ struct Node<T, I> {
 }
 
 trait KeyElem:
-    Copy + PartialOrd + Add<Output = Self> + Sub<Output = Self> + Mul<Output = Self>
+    Copy + PartialOrd + Add<Output = Self> + Sub<Output = Self> + Mul<Output = Self> + Into<i64>
 {
 }
 impl KeyElem for i16 {}
 impl KeyElem for i32 {}
 impl KeyElem for i64 {}
-impl KeyElem for f32 {}
-impl KeyElem for f64 {}
 
 impl<T, I> Display for Node<T, I>
 where
@@ -77,11 +75,11 @@ where
     fn is_leaf(&self) -> bool {
         self.left.is_none() && self.right.is_none()
     }
-    fn squared_dist(&self, target: &[T; 3]) -> T {
+    fn squared_dist(&self, target: &[T; 3]) -> i64 {
         let k = &self.key;
-        let d0 = target[0] - k[0];
-        let d1 = target[1] - k[1];
-        let d2 = target[2] - k[2];
+        let d0 = target[0].into()  - k[0].into();
+        let d1 = target[1].into() - k[1].into();
+        let d2 = target[2].into() - k[2].into();
         return (d0 * d0) + (d1 * d1) + (d2 * d2);
     }
 }
@@ -186,13 +184,13 @@ where
         }
     }
 
-    fn get_dist(dim: Dimension, k1: &[T; 3], k2: &[T; 3]) -> T {
+    fn get_dist(dim: Dimension, k1: &[T; 3], k2: &[T; 3]) -> i64 {
         let n1 = k1[dim as usize];
         let n2 = k2[dim as usize];
         if n1 > n2 {
-            n1 - n2
+            n1.into() - n2.into()
         } else {
-            n2 - n1
+            n2.into() - n1.into()
         }
     }
 }
@@ -278,10 +276,10 @@ fn test_r_tree() {
 use quickcheck_macros::quickcheck;
 
 #[quickcheck]
-fn points_are_found(points: Vec<(i16,i16,i16)>) -> bool {
-    let blkdb = BlockDb::new(points.clone(), |x| [x.0 as i64,x.1 as i64,x.2 as i64]);
+fn points_are_found_without_overflow(points: Vec<(i16,i16,i16)>) -> bool {
+    let blkdb = BlockDb::new(points.clone(), |x| [x.0 ,x.1 ,x.2]);
     points.iter().map(|p| -> bool {
-        if let Some(x) = blkdb.find_closest_pos([p.0 as i64,p.1 as i64,p.2 as i64]) {
+        if let Some(x) = blkdb.find_closest_pos([p.0 ,p.1 ,p.2]) {
             p.0 == x.0 && p.1 == x.1 && p.2 == x.2
         } else {
             false
