@@ -77,9 +77,9 @@ struct Pos {
     b: u64,
 }
 
-impl From<Pos> for [i64; 3] {
+impl From<Pos> for [i32; 3] {
     fn from(p: Pos) -> Self {
-        [p.r as i64, p.g as i64, p.b as i64]
+        [p.r as i32, p.g as i32, p.b as i32]
     }
 }
 

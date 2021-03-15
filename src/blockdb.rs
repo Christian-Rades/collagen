@@ -274,3 +274,17 @@ fn test_r_tree() {
             .unwrap_or((0, 0, 0))
     );
 }
+
+use quickcheck_macros::quickcheck;
+
+#[quickcheck]
+fn points_are_found(points: Vec<(i16,i16,i16)>) -> bool {
+    let blkdb = BlockDb::new(points.clone(), |x| [x.0 as i64,x.1 as i64,x.2 as i64]);
+    points.iter().map(|p| -> bool {
+        if let Some(x) = blkdb.find_closest_pos([p.0 as i64,p.1 as i64,p.2 as i64]) {
+            p.0 == x.0 && p.1 == x.1 && p.2 == x.2
+        } else {
+            false
+        }
+    }).fold(true, |x,y| x && y)
+}
