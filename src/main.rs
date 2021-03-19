@@ -21,9 +21,19 @@ struct Args {
 fn main() {
     let args: Args = argh::from_env();
     let size = args.size;
-    let bar = ProgressBar::new(21);
-    let imgs: Vec<image::RgbImage> = fs::read_dir("input").unwrap().filter_map(|p| {
-        let i = image::open(&p.unwrap().path()).map(|i| i.into_rgb8()).ok();
+    let input: Vec<std::path::PathBuf>= fs::read_dir("input")
+        .unwrap()
+        .filter_map(|p| p.ok())
+        .map(|p| p.path())
+        .filter(|p| p.extension().map_or(false, |e| e ==  "jpg"))
+        .collect();
+    if input.len() < 1 {
+        eprintln!("No input images");
+        return;
+    }
+    let bar = ProgressBar::new(input.len() as u64);
+    let imgs: Vec<image::RgbImage> = input.iter().filter_map(|p| {
+        let i = image::open(p).map(|i| i.into_rgb8()).ok();
         bar.inc(1);
         i
     }).collect();
