@@ -42,7 +42,7 @@ struct Node<T, I> {
     left: Option<Box<Node<T, I>>>,
 }
 
-trait KeyElem:
+pub trait KeyElem:
     Copy + PartialOrd + Add<Output = Self> + Sub<Output = Self> + Mul<Output = Self> + Into<i64>
 {
 }
@@ -77,7 +77,7 @@ where
     }
     fn squared_dist(&self, target: &[T; 3]) -> i64 {
         let k = &self.key;
-        let d0 = target[0].into()  - k[0].into();
+        let d0 = target[0].into() - k[0].into();
         let d1 = target[1].into() - k[1].into();
         let d2 = target[2].into() - k[2].into();
         return (d0 * d0) + (d1 * d1) + (d2 * d2);
@@ -132,7 +132,9 @@ where
     }
 
     pub fn find_closest_pos(&self, pos: [T; 3]) -> Option<&I> {
-        self.root.as_ref().map(|root| &Self::find_closest(root, pos).item)
+        self.root
+            .as_ref()
+            .map(|root| &Self::find_closest(root, pos).item)
     }
 
     fn find_closest(node: &Node<T, I>, pos: [T; 3]) -> &Node<T, I> {
@@ -276,13 +278,16 @@ fn test_r_tree() {
 use quickcheck_macros::quickcheck;
 
 #[quickcheck]
-fn points_are_found_without_overflow(points: Vec<(i16,i16,i16)>) -> bool {
-    let blkdb = BlockDb::new(points.clone(), |x| [x.0 ,x.1 ,x.2]);
-    points.iter().map(|p| -> bool {
-        if let Some(x) = blkdb.find_closest_pos([p.0 ,p.1 ,p.2]) {
-            p.0 == x.0 && p.1 == x.1 && p.2 == x.2
-        } else {
-            false
-        }
-    }).fold(true, |x,y| x && y)
+fn points_are_found_without_overflow(points: Vec<(i16, i16, i16)>) -> bool {
+    let blkdb = BlockDb::new(points.clone(), |x| [x.0, x.1, x.2]);
+    points
+        .iter()
+        .map(|p| -> bool {
+            if let Some(x) = blkdb.find_closest_pos([p.0, p.1, p.2]) {
+                p.0 == x.0 && p.1 == x.1 && p.2 == x.2
+            } else {
+                false
+            }
+        })
+        .fold(true, |x, y| x && y)
 }

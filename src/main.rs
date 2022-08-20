@@ -21,16 +21,13 @@ struct Args {
 fn main() {
     let args: Args = argh::from_env();
     let size = args.size;
-    let input: Vec<std::path::PathBuf>= fs::read_dir("input")
-        .unwrap()
-        .filter_map(|p| p.ok())
-        .map(|p| p.path())
-        .filter(|p| p.extension().map_or(false, |e| e ==  "jpg"))
-        .collect();
+    let input = find_input_images();
+
     if input.len() < 1 {
         eprintln!("No input images");
         return;
     }
+
     let bar = ProgressBar::new(input.len() as u64);
     let imgs: Vec<image::RgbImage> = input.iter().filter_map(|p| {
         let i = image::open(p).map(|i| i.into_rgb8()).ok();
@@ -49,8 +46,6 @@ fn main() {
             }
             return imgs;
         }).collect();
-
-
 
     let bldb = BlockDb::new(sub_imgs, |img| avg_color(img).into());
 
@@ -78,6 +73,16 @@ fn main() {
     }
 
     out_img.save("out.png").unwrap();
+}
+
+fn find_input_images() -> Vec<std::path::PathBuf>
+{
+ fs::read_dir("input")
+        .unwrap()
+        .filter_map(|p| p.ok())
+        .map(|p| p.path())
+        .filter(|p| p.extension().map_or(false, |e| e ==  "jpg"))
+        .collect()
 }
 
 #[derive(Debug)]
